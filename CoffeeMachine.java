@@ -9,20 +9,128 @@ public class CoffeeMachine {
     private static int machineCups;
     private static int machineMoney;
 
-    private static final Scanner scanner = new Scanner(System.in);
+    private static boolean machineInUse;
+    private static MachineState state;
+    private static FillState fill;
+
+    private enum MachineState {
+        MAIN,   // at the main menu
+        BUY,    // in the buy drink menu
+        FILL    // re-fill machine
+    }
+
+    private enum FillState {
+        WATER("ml of water"),
+        MILK("ml of milk"),
+        BEANS("grams of coffee beans"),
+        CUPS("disposable cups of coffee");
+
+        String menu;
+
+        FillState(String item) {
+            this.menu = "Write how many " + item + " do you want to add:";
+        }
+
+        public String getMenu() {
+            return menu;
+        }
+    }
 
     public static void main(String[] args) {
         setupMachine();
-        askAction();
+        inputLoop();
     }
 
-    // initial state of the machine
+    /**
+     *  Set-up initial state of the machine
+     */
     private static void setupMachine() {
         machineWater = 400;
         machineMilk  = 540;
         machineBeans = 120;
         machineCups  = 9;
         machineMoney = 550;
+
+        machineInUse = true;
+        state = MachineState.MAIN;
+        fill = FillState.WATER;
+    }
+
+    /**
+     *  Main menu method. Get input from user as a string, and pass the input on to the appropriate method
+     *  depending on the machine state - main menu, buy, or fill.
+     */
+    private static void inputLoop() {
+        Scanner input = new Scanner(System.in);
+        String command;
+
+        while(machineInUse) {
+            printMenu(state);
+            command = input.next().toUpperCase();
+            switch (state) {
+                case MAIN:
+                    mainMenu(command);
+                    break;
+                case BUY:
+                    buyDrink(command);
+                    break;
+                case FILL:
+                    fillMachine(command);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    /**
+     * Print the correct menu for the state of the machine
+     *
+     * @param state - current state of the machine
+     */
+    private static void printMenu(MachineState state) {
+        switch (state) {
+            case MAIN:
+                System.out.println("Write action (buy, fill, take, remaining, exit):");
+                break;
+            case BUY:
+                System.out.println("What do you want to buy? 1 - espresso, 2 - latte, 3 - cappuccino, back - to main menu:");
+                break;
+            case FILL:
+                System.out.println(fill.getMenu());
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Handle the input at the main menu level of the machine.
+     *
+     * @param command - command input by the user
+     */
+    private static void mainMenu(String command) {
+        System.out.println();
+        switch (command) {
+            case "BUY":
+                state = MachineState.BUY;
+                break;
+            case "FILL":
+                state = MachineState.FILL;
+                break;
+            case "TAKE":
+                takeMoney();
+                break;
+            case "REMAINING":
+                printMachineStatus();
+                break;
+            case "EXIT":
+                machineInUse = false;
+                break;
+            default:
+                System.out.println("Unknown input.");
+                break;
+        }
     }
 
     private static void printMachineStatus() {
@@ -35,100 +143,73 @@ public class CoffeeMachine {
         System.out.println();
     }
 
-    // loop to get the action the user wants to do
-    private static void askAction() {
-        String action = "";
-
-        while(!action.equals("exit")) {
-            System.out.println("Write action (buy, fill, take, remaining, exit):");
-            action = scanner.next().toLowerCase();
-            System.out.println();
-            switch (action) {
-                case "buy":
-                    buyDrink();
-                    break;
-                case "fill":
-                    fillMachine();
-                    break;
-                case "take":
-                    takeMoney();
-                    break;
-                case "remaining":
-                    printMachineStatus();
-                    break;
-                default:
-                    scanner.nextLine();
-                    break;
-            }
-        }
-    }
-
     private static void takeMoney() {
         System.out.println("I gave you $" + machineMoney);
         System.out.println();
         machineMoney = 0;
     }
 
-    private static void fillMachine() {
-        System.out.println("Write how many ml of water do you want to add:");
-        machineWater += scanner.nextInt();
+    private static void fillMachine(String command) {
+        int amount;
 
-        System.out.println("Write how many ml of milk do you want to add:");
-        machineMilk += scanner.nextInt();
+        try {
+            amount = Integer.parseInt(command);
+        } catch (NumberFormatException ex) {
+            System.out.println("Invalid amount.");
+            return;
+        }
 
-        System.out.println("Write how many grams of coffee beans do you want to add:");
-        machineBeans += scanner.nextInt();
-
-        System.out.println("Write how many disposable cups of coffee do you want to add:");
-        machineCups += scanner.nextInt();
-
-        System.out.println();
-    }
-
-    private static void buyDrink() {
-        boolean drinkBought = false;
-
-        while (!drinkBought) {
-            drinkBought = true;
-            System.out.println("What do you want to buy? 1 - espresso, 2 - latte, 3 - cappuccino, back - to main menu:");
-            switch (scanner.next().toLowerCase()) {
-                case "1":
-                    drinkBought = new Drink.Espresso().makeDrink();
-                    break;
-                case "2":
-//                    drinkBought =
-                            new Drink.Latte().makeDrink();
-                    break;
-                case "3":
-//                    drinkBought = new Drink.Cappuccino().makeDrink();
-                    new Drink.Cappuccino().makeDrink();
-                    break;
-                case "back":
-//                    drinkBought = true;
-                    break;
-                default:
-                    drinkBought = false;
-                    scanner.nextLine();
-                    break;
-            }
+        switch (fill) {
+            case WATER:
+                machineWater += amount;
+                fill = FillState.MILK;
+                break;
+            case MILK:
+                machineMilk += amount;
+                fill = FillState.BEANS;
+                break;
+            case BEANS:
+                machineBeans += amount;
+                fill = FillState.CUPS;
+                break;
+            case CUPS:
+                machineCups += amount;
+                fill = FillState.WATER;
+                state = MachineState.MAIN;
+                System.out.println();
+                break;
+            default:
+                break;
         }
     }
 
-    // ask the user how many cups they want, and inform them if we can or cannot fulfill it
-//    private static void askUser(int cups) {
-//        System.out.println("Write how many cups of coffee you will need:");
-//        int cupsNeeded = scanner.nextInt();
-//
-//        if (cupsNeeded > cups) {
-//            System.out.printf("No, I can make only %d cup(s) of coffee\n", cups);
-//        } else {
-//            System.out.print("Yes, I can make that amount of coffee");
-//            if (cupsNeeded < cups) {
-//                System.out.printf(" (and even %d more than that)", cups - cupsNeeded);
-//            }
-//            System.out.println();
-//        }
-//    }
+    /**
+     * Makes the drink of choice. Regardless of if drink is successfully made or not, we set the machine state
+     * back to the main menu level. The lone exception is with bad input to the buy drink, then we stay at the
+     * buy drink state.
+     *
+     * @param input - menu choice from user
+     */
+    private static void buyDrink(String input) {
+        state = MachineState.MAIN;
+        switch (input) {
+            case "1":
+                new Drink.Espresso().makeDrink();
+                break;
+            case "2":
+                new Drink.Latte().makeDrink();
+                break;
+            case "3":
+                new Drink.Cappuccino().makeDrink();
+                break;
+            case "BACK":
+                break;
+            default:
+                System.out.println("Input error! Try again.");
+                state = MachineState.BUY;
+                break;
+        }
+    }
 
     private static class Drink {
         private static int water;
@@ -136,10 +217,8 @@ public class CoffeeMachine {
         private static int beans;
         private static int cost;
 
-        public boolean makeDrink() {
-            boolean drinkMade = checkIngredients();
-
-            if (drinkMade) {
+        public void makeDrink() {
+            if (checkIngredients()) {
                 System.out.println("I have enough resources, making you a coffee!");
                 machineWater -= water;
                 machineMilk  -= milk;
@@ -149,7 +228,6 @@ public class CoffeeMachine {
             }
 
             System.out.println();
-            return drinkMade;
         }
 
         private boolean checkIngredients() {
