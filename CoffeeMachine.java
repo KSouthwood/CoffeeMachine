@@ -13,11 +13,7 @@ public class CoffeeMachine {
 
     public static void main(String[] args) {
         setupMachine();
-        printMachineStatus();
-        System.out.println();
         askAction();
-        System.out.println();
-        printMachineStatus();
     }
 
     // initial state of the machine
@@ -35,29 +31,30 @@ public class CoffeeMachine {
         System.out.println(machineMilk + " of milk");
         System.out.println(machineBeans + " of coffee beans");
         System.out.println(machineCups + " of disposable cups");
-        System.out.println(machineMoney + " of money");
+        System.out.println("$" + machineMoney + " of money");
+        System.out.println();
     }
 
-    // get the amounts of ingredients are in the machine
+    // loop to get the action the user wants to do
     private static void askAction() {
-        String action;
-        boolean actionTaken = false;
+        String action = "";
 
-        while(!actionTaken) {
-            System.out.println("Write action (buy, fill, take):");
-            action = scanner.next();
+        while(!action.equals("exit")) {
+            System.out.println("Write action (buy, fill, take, remaining, exit):");
+            action = scanner.next().toLowerCase();
+            System.out.println();
             switch (action) {
                 case "buy":
                     buyDrink();
-                    actionTaken = true;
                     break;
                 case "fill":
                     fillMachine();
-                    actionTaken = true;
                     break;
                 case "take":
                     takeMoney();
-                    actionTaken = true;
+                    break;
+                case "remaining":
+                    printMachineStatus();
                     break;
                 default:
                     scanner.nextLine();
@@ -68,6 +65,7 @@ public class CoffeeMachine {
 
     private static void takeMoney() {
         System.out.println("I gave you $" + machineMoney);
+        System.out.println();
         machineMoney = 0;
     }
 
@@ -83,50 +81,38 @@ public class CoffeeMachine {
 
         System.out.println("Write how many disposable cups of coffee do you want to add:");
         machineCups += scanner.nextInt();
+
+        System.out.println();
     }
 
     private static void buyDrink() {
         boolean drinkBought = false;
 
         while (!drinkBought) {
-            machineCups--;
-            System.out.println("What do you want to buy? 1 - espresso, 2 - latte, 3 - cappuccino:");
-            switch (scanner.nextInt()) {
-                case 1:
-                    machineWater -= 250;
-                    machineBeans -= 16;
-                    machineMoney += 4;
-                    drinkBought = true;
+            drinkBought = true;
+            System.out.println("What do you want to buy? 1 - espresso, 2 - latte, 3 - cappuccino, back - to main menu:");
+            switch (scanner.next().toLowerCase()) {
+                case "1":
+                    drinkBought = new Drink.Espresso().makeDrink();
                     break;
-                case 2:
-                    machineWater -= 350;
-                    machineMilk -= 75;
-                    machineBeans -= 20;
-                    machineMoney += 7;
-                    drinkBought = true;
+                case "2":
+//                    drinkBought =
+                            new Drink.Latte().makeDrink();
                     break;
-                case 3:
-                    machineWater -= 200;
-                    machineMilk -= 100;
-                    machineBeans -= 12;
-                    machineMoney += 6;
-                    drinkBought = true;
+                case "3":
+//                    drinkBought = new Drink.Cappuccino().makeDrink();
+                    new Drink.Cappuccino().makeDrink();
+                    break;
+                case "back":
+//                    drinkBought = true;
                     break;
                 default:
+                    drinkBought = false;
                     scanner.nextLine();
                     break;
             }
         }
     }
-
-    // calculate the how many cups we can make based on how much of each ingredient there is
-//    private static int calculateCups() {
-//        int cupsWater = machineWater / WATER;
-//        int cupsMilk  = machineMilk / MILK;
-//        int cupsBeans = machineBeans / BEANS;
-//
-//        return Math.min(cupsWater, Math.min(cupsMilk, cupsBeans));
-//    }
 
     // ask the user how many cups they want, and inform them if we can or cannot fulfill it
 //    private static void askUser(int cups) {
@@ -143,4 +129,80 @@ public class CoffeeMachine {
 //            System.out.println();
 //        }
 //    }
+
+    private static class Drink {
+        private static int water;
+        private static int milk;
+        private static int beans;
+        private static int cost;
+
+        public boolean makeDrink() {
+            boolean drinkMade = checkIngredients();
+
+            if (drinkMade) {
+                System.out.println("I have enough resources, making you a coffee!");
+                machineWater -= water;
+                machineMilk  -= milk;
+                machineBeans -= beans;
+                machineMoney += cost;
+                machineCups--;
+            }
+
+            System.out.println();
+            return drinkMade;
+        }
+
+        private boolean checkIngredients() {
+            boolean made = true;
+
+            if (water > machineWater) {
+                System.out.println("Sorry, not enough water!");
+                made = false;
+            }
+
+            if (milk > machineMilk) {
+                System.out.println("Sorry, not enough milk!");
+                made = false;
+            }
+
+            if (beans > machineBeans) {
+                System.out.println("Sorry, not enough coffee beans!");
+                made = false;
+            }
+
+            if (machineCups == 0) {
+                System.out.println("Sorry, not enough cups!");
+                made = false;
+            }
+
+            return made;
+        }
+
+        private static class Espresso extends Drink {
+            Espresso() {
+                water = 250;
+                milk  = 0;
+                beans = 16;
+                cost  = 4;
+            }
+        }
+
+        private static class Latte extends Drink {
+            Latte() {
+                water = 350;
+                milk  = 75;
+                beans = 20;
+                cost  = 7;
+            }
+        }
+
+        private static class Cappuccino extends Drink {
+            Cappuccino() {
+                water = 200;
+                milk  = 100;
+                beans = 12;
+                cost  = 6;
+            }
+        }
+    }
 }
